@@ -8,7 +8,7 @@ export const FIXTURES = path.join(
 );
 
 // window.__test の型は src/app.ts の declare global が同じ tsconfig 配下で有効
-/** フィクスチャ画像を読み込み、編集状態になるまで待つ */
+/** フィクスチャ画像を読み込み、編集状態 + 初回描画完了まで待つ */
 export async function loadImage(page: Page, fixture: string): Promise<void> {
   await page.goto("/");
   await page.setInputFiles("#file-input", path.join(FIXTURES, fixture));
@@ -17,6 +17,8 @@ export async function loadImage(page: Page, fixture: string): Promise<void> {
     "editing",
     { timeout: 45_000 },
   );
+  // editing 直後は rAF での初回 composite 描画がまだの可能性がある（遅い CI で顕在化）
+  await waitForRender(page);
 }
 
 /** source と composite の指定パッチの RGB 平均絶対差（0 = 同一） */
