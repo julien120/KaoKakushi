@@ -1,0 +1,361 @@
+/*
+ * デザイン: design.md に基づく「ぼかし (bokashi)」— 浮世絵の摺り技法を出自とする
+ * インクウォッシュの静かな画面。
+ * トークン: 紙=胡粉 / 文字=墨 / 操作=藍 / 一点の朱。書体は明朝(見出し)+ゴシック(本文)。
+ * 外部フォント・外部リソースは一切読み込まない（プライバシー宣言 = 外部通信ゼロ）。
+ */
+:root {
+  --paper: #f3f4f1;
+  --paper-deep: #e9ebe6;
+  --sumi: #24231f;
+  --sumi-soft: #5c5b54;
+  --ai: #2c4a70; /* 藍 */
+  --ai-deep: #1e3550;
+  --shu: #bf3b2b; /* 朱 — 一点だけ */
+  --line: #cdd0c8;
+  --font-display: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --font-body:
+    "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", system-ui,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--sumi);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ai);
+  outline-offset: 3px;
+}
+
+/* ---- ヘッダー ---- */
+.site-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.site-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(28px, 5vw, 44px);
+  letter-spacing: 0.35em;
+  text-indent: 0.35em; /* letter-spacing の右余白を相殺して視覚的中央へ */
+  margin: 0 0 6px;
+}
+
+.site-tagline {
+  margin: 0;
+  color: var(--sumi-soft);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+/* 編集中は道具に場所を譲り、ヘッダーは小さく退く */
+body[data-app-state="editing"] .site-header {
+  margin-bottom: 16px;
+}
+
+body[data-app-state="editing"] .site-title {
+  font-size: 22px;
+}
+
+body[data-app-state="editing"] .site-tagline {
+  display: none;
+}
+
+/* ---- ドロップゾーン（シグネチャ: 漂うぼかしの藍玉） ---- */
+.dropzone {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 96px 24px;
+  text-align: center;
+  cursor: pointer;
+  background: #fbfbf9;
+  transition: border-color 0.3s ease;
+}
+
+.dropzone::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(
+    circle at 50% 42%,
+    rgba(44, 74, 112, 0.22),
+    rgba(44, 74, 112, 0.07) 34%,
+    transparent 62%
+  );
+  filter: blur(28px);
+  animation: drift 14s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes drift {
+  from {
+    transform: translate(-4%, -3%) scale(1);
+  }
+  to {
+    transform: translate(4%, 3%) scale(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropzone::before {
+    animation: none;
+  }
+}
+
+.dropzone:hover,
+.dropzone.drag-over {
+  border-color: var(--ai);
+}
+
+.dropzone.drag-over::before {
+  filter: blur(12px);
+}
+
+.dropzone-inner {
+  position: relative;
+}
+
+.dropzone-title {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 24px);
+  letter-spacing: 0.18em;
+  margin: 0 0 8px;
+}
+
+.dropzone-sub {
+  margin: 0 0 28px;
+  color: var(--sumi-soft);
+  font-size: 13px;
+}
+
+.dropzone-privacy {
+  display: inline-block;
+  margin: 0;
+  font-size: 12px;
+  color: var(--ai-deep);
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  letter-spacing: 0.06em;
+}
+
+/* ---- エディタ ---- */
+.status {
+  margin: 0 0 12px;
+  min-height: 1.8em;
+  font-size: 13.5px;
+  color: var(--sumi-soft);
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.canvas-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  background: var(--paper-deep);
+  border-radius: 4px;
+  padding: 16px;
+}
+
+#display {
+  touch-action: none;
+  cursor: none;
+  max-width: 100%;
+  box-shadow: 0 2px 18px rgba(36, 35, 31, 0.18);
+}
+
+.brush-cursor {
+  position: absolute;
+  border: 1.5px solid rgba(251, 251, 249, 0.95);
+  outline: 1px solid rgba(36, 35, 31, 0.55);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ---- ツールバー ---- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 18px;
+  justify-content: center;
+}
+
+.tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 12px 14px 10px;
+  margin: 0;
+  background: #fbfbf9;
+}
+
+.tool-group legend {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--sumi-soft);
+  padding: 0 6px;
+}
+
+.tool-button {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  letter-spacing: 0.05em;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--sumi);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.tool-button:hover:not(:disabled) {
+  border-color: var(--ai);
+  color: var(--ai-deep);
+}
+
+.tool-button[aria-pressed="true"] {
+  background: var(--ai);
+  border-color: var(--ai);
+  color: #fbfbf9;
+}
+
+.tool-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* 朱は一点だけ: 仕上げのダウンロード */
+.tool-button.primary {
+  background: var(--shu);
+  border-color: var(--shu);
+  color: #fbfbf9;
+}
+
+.tool-button.primary:hover:not(:disabled) {
+  background: #a63325;
+  border-color: #a63325;
+  color: #fbfbf9;
+}
+
+.slider-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--sumi-soft);
+  letter-spacing: 0.08em;
+}
+
+input[type="range"] {
+  accent-color: var(--ai);
+  width: 110px;
+}
+
+select {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--sumi);
+}
+
+/* ---- トースト・フッター ---- */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--sumi);
+  color: var(--paper);
+  padding: 10px 20px;
+  border-radius: 3px;
+  font-size: 13.5px;
+  letter-spacing: 0.05em;
+  max-width: calc(100vw - 40px);
+}
+
+.site-footer {
+  margin-top: auto;
+  padding-top: 48px;
+  text-align: center;
+}
+
+.site-footer p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--sumi-soft);
+  letter-spacing: 0.06em;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+/* ---- レスポンシブ ---- */
+@media (max-width: 640px) {
+  #app {
+    padding: 20px 12px 32px;
+  }
+
+  .site-header {
+    margin-bottom: 24px;
+  }
+
+  .dropzone {
+    padding: 64px 16px;
+  }
+
+  .canvas-wrap {
+    padding: 8px;
+  }
+
+  .toolbar {
+    gap: 8px;
+  }
+
+  .tool-group {
+    width: 100%;
+    justify-content: center;
+  }
+}

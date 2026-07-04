@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kao Kakushi — 顔を、そっと隠す</title>
+    <meta
+      name="description"
+      content="写真の顔を自動検出してぼかす、完全ブラウザ内処理のプライバシー保護ツール。画像はどこにも送信されません。"
+    />
+  </head>
+  <body data-app-state="idle">
+    <div id="app">
+      <header class="site-header">
+        <h1 class="site-title">Kao Kakushi</h1>
+        <p class="site-tagline">
+          顔を、そっと隠す。写真はブラウザの外に一切出ません。
+        </p>
+      </header>
+
+      <main class="main">
+        <section id="dropzone" class="dropzone" aria-label="写真の読み込み">
+          <div class="dropzone-inner">
+            <p class="dropzone-title">写真をここにドラッグ＆ドロップ</p>
+            <p class="dropzone-sub">
+              またはクリックして選択・Ctrl+V で貼り付け
+            </p>
+            <p class="dropzone-privacy">
+              処理はすべてこの端末内で完結します。アップロードは行われません。
+            </p>
+          </div>
+          <input
+            id="file-input"
+            type="file"
+            accept="image/*"
+            class="visually-hidden"
+            aria-label="写真ファイルを選択"
+          />
+        </section>
+
+        <section id="editor" class="editor" hidden>
+          <div id="status" class="status" role="status"></div>
+          <div id="canvas-wrap" class="canvas-wrap">
+            <canvas id="display"></canvas>
+            <div id="brush-cursor" class="brush-cursor" hidden></div>
+          </div>
+
+          <div class="toolbar">
+            <fieldset class="tool-group" id="brush-mode-group">
+              <legend>ブラシ</legend>
+              <button
+                type="button"
+                id="mode-protect"
+                class="tool-button"
+                aria-pressed="true"
+              >
+                ぼかし解除
+              </button>
+              <button
+                type="button"
+                id="mode-add"
+                class="tool-button"
+                aria-pressed="false"
+              >
+                ぼかし追加
+              </button>
+              <label class="slider-label">
+                サイズ
+                <input
+                  type="range"
+                  id="brush-size"
+                  min="10"
+                  max="100"
+                  value="36"
+                />
+              </label>
+              <button type="button" id="undo" class="tool-button" disabled>
+                取り消す
+              </button>
+            </fieldset>
+
+            <fieldset class="tool-group" id="blur-group">
+              <legend>ぼかし</legend>
+              <button
+                type="button"
+                id="style-gaussian"
+                class="tool-button"
+                aria-pressed="true"
+              >
+                ぼかし
+              </button>
+              <button
+                type="button"
+                id="style-mosaic"
+                class="tool-button"
+                aria-pressed="false"
+              >
+                モザイク
+              </button>
+              <label class="slider-label">
+                強さ
+                <input
+                  type="range"
+                  id="blur-strength"
+                  min="0"
+                  max="100"
+                  value="60"
+                />
+              </label>
+            </fieldset>
+
+            <fieldset class="tool-group" id="output-group">
+              <legend>書き出し</legend>
+              <label class="slider-label">
+                形式
+                <select id="format">
+                  <option value="png" selected>PNG</option>
+                  <option value="jpeg">JPEG</option>
+                </select>
+              </label>
+              <button type="button" id="download" class="tool-button primary">
+                ダウンロード
+              </button>
+              <button type="button" id="reset" class="tool-button">
+                別の写真
+              </button>
+            </fieldset>
+          </div>
+        </section>
+
+        <div id="toast" class="toast" hidden role="alert"></div>
+      </main>
+
+      <footer class="site-footer">
+        <p>
+          顔検出もぼかしもすべてブラウザ内で実行。画像・データの送信はゼロ。
+          書き出し時に位置情報などのメタデータ (EXIF) も自動で削除されます。
+        </p>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

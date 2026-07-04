@@ -1,0 +1,8 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+public/ort/
+e2e/fixtures/group_photo.png
+.DS_Store
+*.local
